@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -148,14 +148,14 @@ CKEDITOR.htmlParser.fragment = function()
 				else
 					elementName =  element.name;
 
-				if ( elementName && !( elementName in CKEDITOR.dtd.$body || elementName == 'body' || element.isOrphan ) )
+	 			if ( elementName && !( elementName in CKEDITOR.dtd.$body || elementName == 'body' || element.isOrphan ) )
 				{
 					// Create a <p> in the fragment.
 					currentNode = target;
 					parser.onTagOpen( fixForBody, {} );
 
 					// The new target now is the <p>.
-					element.returnPoint = target = currentNode;
+ 					element.returnPoint = target = currentNode;
 				}
 			}
 
@@ -213,11 +213,16 @@ CKEDITOR.htmlParser.fragment = function()
 				return;
 			}
 
+			// Wikia - start
+			// this breaks test case 123\n<br />\n456 - add <br> tags immediately
+			/*
 			if ( tagName == 'br' )
 			{
 				pendingBRs.push( element );
 				return;
 			}
+			*/
+			// Wikia - end
 
 			while( 1 )
 			{

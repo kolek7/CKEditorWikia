@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -97,6 +97,11 @@ CKEDITOR.ui.richCombo = CKEDITOR.tools.createClass(
 
 					if ( _.state == CKEDITOR.TRISTATE_DISABLED )
 						return;
+
+					// Wikia - start - @author: wladek - allow open/close behavior of richcombos
+					if ( _.justHidden == true )
+						return;
+					// Wikia - end
 
 					this.createPanel( editor );
 
@@ -200,7 +205,7 @@ CKEDITOR.ui.richCombo = CKEDITOR.tools.createClass(
 			output.push(
 					' onkeydown="CKEDITOR.tools.callFunction( ', keyDownFn, ', event, this );"' +
 					' onfocus="return CKEDITOR.tools.callFunction(', focusFn, ', event);" ' +
-					( CKEDITOR.env.ie ? 'onclick="return false;" onmouseup' : 'onclick' ) +		// #188
+					( CKEDITOR.env.ie ? 'onclick="return false;" onmouseup' : 'onclick' ) +         // #188
 						'="CKEDITOR.tools.callFunction(', clickFn, ', this); return false;">' +
 						'<span>' +
 							'<span id="' + id + '_text" class="cke_text cke_inline_label">' + this.label + '</span>' +
@@ -221,6 +226,13 @@ CKEDITOR.ui.richCombo = CKEDITOR.tools.createClass(
 			if ( this._.panel )
 				return;
 
+			// Wikia - start
+			// apply custom styling for rich combo content
+			if (editor.config.richcomboCss != '') {
+				this._.panelDefinition.css = [editor.config.richcomboCss];
+			}
+			// Wikia - end
+
 			var panelDefinition = this._.panelDefinition,
 				panelBlockDefinition = this._.panelDefinition.block,
 				panelParentElement = panelDefinition.parent || CKEDITOR.document.getBody(),
@@ -230,6 +242,14 @@ CKEDITOR.ui.richCombo = CKEDITOR.tools.createClass(
 
 			panel.onShow = function()
 				{
+					// Wikia - start
+					editor.fire('panelShow', {panel: this, me: me});
+					// Wikia - end
+
+					// Wikia - start - @author: wladek - cke_opened class
+					me.document.getById( 'cke_' + me.id ).getParent().addClass('cke_opened');
+					// Wikia - end
+
 					if ( me.className )
 						this.element.getFirst().addClass( me.className + '_panel' );
 
@@ -245,6 +265,10 @@ CKEDITOR.ui.richCombo = CKEDITOR.tools.createClass(
 
 			panel.onHide = function( preventOnClose )
 				{
+					// Wikia - start - @author: wladek - cke_opened class
+					me.document.getById( 'cke_' + me.id ).getParent().removeClass('cke_opened');
+					// Wikia - end
+
 					if ( me.className )
 						this.element.getFirst().removeClass( me.className + '_panel' );
 
@@ -254,6 +278,13 @@ CKEDITOR.ui.richCombo = CKEDITOR.tools.createClass(
 
 					if ( !preventOnClose && me.onClose )
 						me.onClose();
+
+					// Wikia - start - @author: wladek - allow open/close behavior of richcombos
+					me._.justHidden = true;
+					setTimeout(function(){
+						me._.justHidden = false;
+					},400);
+					// Wikia - end
 				};
 
 			panel.onEscape = function()
@@ -263,6 +294,10 @@ CKEDITOR.ui.richCombo = CKEDITOR.tools.createClass(
 
 			list.onClick = function( value, marked )
 				{
+					// Wikia - start
+					editor.fire('panelClick', {panel: this, me: me, value: value});
+					// Wikia - end
+
 					// Move the focus to the main windows, otherwise it will stay
 					// into the floating panel, even if invisible, and Safari and
 					// Opera will go a bit crazy.
@@ -287,6 +322,14 @@ CKEDITOR.ui.richCombo = CKEDITOR.tools.createClass(
 					me._.on = 0;
 					me.setState( CKEDITOR.TRISTATE_OFF );
 				};
+
+			// Wikia - start
+			editor.on( 'toolbartabswitch', function() {
+				if (me._.on) {
+					panel.hide();
+				}
+			});
+			// Wikia - end
 
 			if ( this.init )
 				this.init();
@@ -379,3 +422,11 @@ CKEDITOR.ui.prototype.addRichCombo = function( name, definition )
 {
 	this.add( name, CKEDITOR.UI_RICHCOMBO, definition );
 };
+
+
+/**
+ * CSS to be loaded for richcombo dropdown (added by Wikia)
+ * @type string
+ * @default ''
+*/
+CKEDITOR.config.richcomboCss = '';

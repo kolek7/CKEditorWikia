@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -134,6 +134,14 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			case CKEDITOR.SHIFT + 45 :		// SHIFT+INS
 
 				var body = this.document.getBody();
+
+				// Wikia change - begin
+				// fire custom event when paste is triggered via keyboard shortcut
+				if (body.fire('beforepasteonkey')) {
+					event.cancel();
+					return;
+				}
+				// Wikia change - begin
 
 				// Simulate 'beforepaste' event for all none-IEs.
 				if ( !CKEDITOR.env.ie && body.fire( 'beforepaste' ) )
@@ -328,7 +336,8 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 						setTimeout( function()
 						{
 							// Open default paste dialog.
-							editor.openDialog( 'paste' );
+							// Wikia change - BugId:7605
+							editor.openDialog( editor.config.forcePasteAsPlainText ? 'pastetext' : 'paste' );
 						}, 0 );
 					});
 
@@ -369,33 +378,41 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 
 				editor.on( 'key', onKey, editor );
 
+				var mode = editor.config.forcePasteAsPlainText ? 'text' : 'html';
+
 				// We'll be catching all pasted content in one line, regardless of whether the
 				// it's introduced by a document command execution (e.g. toolbar buttons) or
 				// user paste behaviors. (e.g. Ctrl-V)
+
 				editor.on( 'contentDom', function()
 				{
 					var body = editor.document.getBody();
-					body.on( CKEDITOR.env.webkit ? 'paste' : 'beforepaste', function( evt )
-						{
-							if ( depressBeforeEvent )
-								return;
+ 					body.on( CKEDITOR.env.webkit ? 'paste' : 'beforepaste', function( evt )
+  						{
+  							if ( depressBeforeEvent )
+  								return;
 
-							// Fire 'beforePaste' event so clipboard flavor get customized
-							// by other plugins.
-							var eventData =  { mode : 'html' };
-							editor.fire( 'beforePaste', eventData );
+ 							// Fire 'beforePaste' event so clipboard flavor get customized
+ 							// by other plugins.
+ 							var eventData =  { mode : 'html' };
+ 							editor.fire( 'beforePaste', eventData );
 
-							getClipboardData.call( editor, evt, eventData.mode, function ( data )
-							{
-								// The very last guard to make sure the
-								// paste has successfully happened.
-								if ( !( data = CKEDITOR.tools.trim( data.replace( /<span[^>]+data-cke-bookmark[^<]*?<\/span>/ig,'' ) ) ) )
-									return;
+							/**
+							 * Wikia change
+							 * Commented out because of RT#40922
+							 *
+ 							getClipboardData.call( editor, evt, eventData.mode, function ( data )
+  							{
+  								// The very last guard to make sure the
+  								// paste has successfully happened.
+ 								if ( !( data = CKEDITOR.tools.trim( data.replace( /<span[^>]+data-cke-bookmark[^<]*?<\/span>/ig,'' ) ) ) )
+  									return;
 
-								var dataTransfer = {};
-								dataTransfer[ eventData.mode ] = data;
-								editor.fire( 'paste', dataTransfer );
+  								var dataTransfer = {};
+ 								dataTransfer[ eventData.mode ] = data;
+  								editor.fire( 'paste', dataTransfer );
 							} );
+							/**/
 						});
 
 					// Dismiss the (wrong) 'beforepaste' event fired on context menu open. (#7953)
@@ -406,7 +423,6 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 					});
 
 					body.on( 'beforecut', function() { !depressBeforeEvent && fixCut( editor ); } );
-
 					body.on( 'mouseup', function(){ setTimeout( function(){ setToolbarStates.call( editor ); }, 0 ); }, editor );
 					body.on( 'keyup', setToolbarStates, editor );
 				});
@@ -422,14 +438,14 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 				if ( editor.contextMenu )
 				{
 					editor.contextMenu.addListener( function( element, selection )
-						{
-							var readOnly = selection.getRanges()[ 0 ].checkReadOnly();
-							return {
-								cut : !readOnly && stateFromNamedCommand( 'Cut', editor ),
-								copy : stateFromNamedCommand( 'Copy', editor ),
-								paste : !readOnly && ( CKEDITOR.env.webkit ? CKEDITOR.TRISTATE_OFF : stateFromNamedCommand( 'Paste', editor ) )
-							};
-						});
+							{
+								var readOnly = selection.getRanges()[ 0 ].checkReadOnly();
+								return {
+									cut : !readOnly && stateFromNamedCommand( 'Cut', editor ),
+									copy : stateFromNamedCommand( 'Copy', editor ),
+									paste : !readOnly && ( CKEDITOR.env.webkit ? CKEDITOR.TRISTATE_OFF : stateFromNamedCommand( 'Paste', editor ) )
+								};
+							});
 				}
 			}
 		});
@@ -451,3 +467,12 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
  * @name CKEDITOR.editor#pasteDialog
  * @event
  */
+
+/**
+ * Force plain text pasting
+ * @type Boolean
+ * @default false
+ * @example
+ * config.forcePasteAsPlainText = false;
+ */
+CKEDITOR.config.forcePasteAsPlainText = false;

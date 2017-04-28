@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -652,6 +652,54 @@ CKEDITOR.tools.extend( CKEDITOR.dom.node.prototype,
 				}
 			}
 		},
+		
+		// Wikia - start
+		findFormattableAncestor : function()
+		{
+			var current = this;
+			while( current )
+			{
+				if ( current.type == CKEDITOR.NODE_ELEMENT )
+				{
+					if ( current.is( 'body' ) || current.getCustomData( '_cke_notReadOnly' ) )
+						break;
+
+					if ( current.getAttribute( 'contentEditable' ) == 'false' ) {
+						if (current.getAttribute( 'formatEditable' ) == 'true') {
+							return current;
+						}
+					} else if ( current.getAttribute( 'contentEditable' ) == 'true' )
+						break;
+				}
+				current = current.getParent();
+			}
+
+			return false;
+		},
+		
+		isReadOnlyNotFormattable : function ()
+		{
+			var current = this;
+			while( current )
+			{
+				if ( current.type == CKEDITOR.NODE_ELEMENT )
+				{
+					if ( current.is( 'body' ) || current.getCustomData( '_cke_notReadOnly' ) )
+						break;
+
+					if ( current.getAttribute( 'contentEditable' ) == 'false' ) {
+						if ( current.getAttribute( 'formatEditable' ) != 'true') {
+							return current;
+						}
+					} else if ( current.getAttribute( 'contentEditable' ) == 'true' )
+						break;
+				}
+				current = current.getParent();
+			}
+
+			return false;
+		},
+		// Wikia - end
 
 		/**
 		 * Checks if this node is read-only (should not be changed). Additionally

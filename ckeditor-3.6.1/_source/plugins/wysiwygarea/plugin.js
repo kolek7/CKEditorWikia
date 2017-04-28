@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -30,7 +30,34 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			{
 				this.focus();
 
+				/**
+				 * Removed during an update to v3.5.1 -- macbre
+				if ( checkReadOnly( selection ) )
+				// Wikia - start
+				{
+					var data = {
+						result: true,
+						selection: selection
+					};
+					editor.fire( 'forbiddenInsertContent', data );
+					if (data.result) {
+						return;
+					}
+				}
+				// Wikia -end
+				**/
+
 				this.fire( 'saveSnapshot' );
+
+				// Wikia - start
+				var selection = this.getSelection();
+				var eventDataEx = {
+					selection: selection,
+					ranges: selection && selection.getRanges(),
+					data: evt.data
+				};
+				this.fire('beforeInsertContent',eventDataEx);
+				// Wikia - end
 
 				insertFunc.call( this, evt.data );
 
@@ -40,6 +67,10 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 				// call.
 				CKEDITOR.tools.setTimeout( function()
 				   {
+						// Wikia - start
+						this.fire('afterInsertContent',eventDataEx);
+						// Wikia - end
+
 					   this.fire( 'saveSnapshot' );
 				   }, 0, this );
 			}
@@ -121,8 +152,13 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			if ( selIsLocked )
 				this.getSelection().lock();
 		}
-		else
-			this.document.$.execCommand( 'inserthtml', false, data );
+		else {
+			// fix NS_ERROR_FAILURE exception in Firefox
+			var self = this;
+			setTimeout(function() {
+				self.document.$.execCommand( 'inserthtml', false, data );
+			}, 100);
+		}
 
 		// Webkit does not scroll to the cursor position after pasting (#5558)
 		if ( CKEDITOR.env.webkit )
@@ -255,6 +291,22 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 						}
 					}
 
+					// Wikia - start
+					// BugId:4440
+					var commonAncestor = range.getCommonAncestor(0,1);
+					if ((/h\d/i).test(commonAncestor.getName())) {
+						// if cursor is at very start of line - place the new item on the wikitext line above the header
+						var insertBefore = (range.startOffset == 0);
+
+						if (insertBefore) {
+							range.setStartBefore(commonAncestor);
+						}
+						else {
+							range.setStartAfter(commonAncestor);
+						}
+					}
+					// Wikia - end
+
 					// Insert the new node.
 					range.insertNode( clone );
 
@@ -262,6 +314,9 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 					// selection later.
 					if ( !lastElement )
 						lastElement = clone;
+				}
+				else {
+					this.fire('readOnlySelection');
 				}
 			}
 
@@ -665,7 +720,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 
 									// Prevent right click from selecting an empty block even
 									// when selection is anchored inside it. (#5845)
-									if ( !target.getOuterHtml().replace( emptyParagraphRegexp, '' ) )
+									if ( target.getOuterHtml && !target.getOuterHtml().replace( emptyParagraphRegexp, '' ) )
 									{
 										var range = new CKEDITOR.dom.range( domDocument );
 										range.moveToElementEditStart( target );
@@ -705,8 +760,8 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 
 						// IE standard compliant in editing frame doesn't focus the editor when
 						// clicking outside actual content, manually apply the focus. (#1659)
-						if ( editable &&
-								CKEDITOR.env.ie && domDocument.$.compatMode == 'CSS1Compat'
+ 						if ( editable &&
+ 								CKEDITOR.env.ie && domDocument.$.compatMode == 'CSS1Compat'
 								|| CKEDITOR.env.gecko
 								|| CKEDITOR.env.opera )
 						{
@@ -717,11 +772,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 								// have to use here a temporary element to 'redirect'
 								// the focus.
 								if ( evt.data.getTarget().equals( htmlElement ) )
-								{
-									if ( CKEDITOR.env.gecko && CKEDITOR.env.version >= 10900 )
-										blinkCursor();
-									focusGrabber.focus();
-								}
+									editor.focusGrabber && editor.focusGrabber.focus();
 							} );
 						}
 
@@ -755,7 +806,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 							});
 
 						var keystrokeHandler = editor.keystrokeHandler;
-						// Prevent backspace from navigating off the page.
+						// Prevent backspace from navigating off the page. 
 						keystrokeHandler.blockedKeystrokes[ 8 ] = !editable;
 						keystrokeHandler.attach( domDocument );
 
@@ -1146,6 +1197,10 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 						var wysiwyg = editor.getMode();
 						wysiwyg.loadData( wysiwyg.getData() );
 					}
+
+					// wikia change start: re-enable backspace if not read only
+					editor.keystrokeHandler.blockedKeystrokes[ 8 ] = editor.readOnly;
+					// wikia change end
 				});
 
 			// IE>=8 stricts mode doesn't have 'contentEditable' in effect
@@ -1206,7 +1261,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			}
 
 			// Create an invisible element to grab focus.
-			if ( CKEDITOR.env.gecko || CKEDITOR.env.ie || CKEDITOR.env.opera )
+			if ( CKEDITOR.env.ie || CKEDITOR.env.opera )
 			{
 				var focusGrabber;
 				editor.on( 'uiReady', function()

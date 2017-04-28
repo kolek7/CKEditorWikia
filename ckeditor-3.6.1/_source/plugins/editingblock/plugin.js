@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -99,8 +99,23 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 							editor.focus();
 						});
 
-					if ( editor.config.startupFocus )
-						editor.focus();
+					// Wikia change - begin
+					// fix focus broken in Fx
+					if (editor.config.startupFocus) {
+						var focusEditor = function() {
+							editor.focus();
+							if ( editor.mode === 'source' ) {
+								editor.textarea.$.scrollTop = 0;
+								editor.textarea.$.setSelectionRange(0, 0);
+							}
+						};
+						if (CKEDITOR.env.gecko) {
+							setTimeout(focusEditor, 500);
+						} else {
+							focusEditor();
+						}
+					}
+					// Wikia change - end
 
 					// Fire instanceReady for both the editor and CKEDITOR, but
 					// defer this until the whole execution has completed

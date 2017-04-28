@@ -24,7 +24,7 @@ class CKEditor
 	/**
 	 * A constant string unique for each release of %CKEditor.
 	 */
-	const timestamp = 'B5GJ5GG';
+	const timestamp = '20110824';
 
 	/**
 	 * URL to the %CKEditor installation directory (absolute or relative to document root).
@@ -78,7 +78,7 @@ class CKEditor
 	 * A string indicating the creation date of %CKEditor.
 	 * Do not change it unless you want to force browsers to not use previously cached version of %CKEditor.
 	 */
-	public $timestamp = "B5GJ5GG";
+	public $timestamp = "20110824";
 	/**
 	 * An array that holds event listeners.
 	 */
@@ -460,6 +460,11 @@ class CKEditor
 		$out .= "<script type=\"text/javascript\" src=\"" . $ckeditorPath . 'ckeditor.js' . $args . "\"></script>\n";
 
 		$extraCode = "";
+		// CKReleaser %REMOVE_START%
+		if (self::version == '3.6.1') {
+			$extraCode .= ($extraCode ? "\n" : "") . "if (typeof(CKEDITOR) == 'undefined') { alert('The CKEDITOR object was not found. Please make sure that the ckeditor.js file is available in your installation.'); }";
+		}
+		// %REMOVE_END%
 		if ($this->timestamp != self::timestamp) {
 			$extraCode .= ($extraCode ? "\n" : "") . "CKEDITOR.timestamp = '". $this->timestamp ."';";
 		}

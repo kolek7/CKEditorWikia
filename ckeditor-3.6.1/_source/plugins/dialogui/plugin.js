@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -541,6 +541,26 @@ CKEDITOR.plugins.add( 'dialogui' );
 						element.unselectable();
 					}, this );
 
+				// wikia: CSS class changes
+				if (typeof elementDefinition['class'] != 'undefined') {
+					elementDefinition['class'] = elementDefinition['class']
+						.replace(/cke_dialog_ui_button_cancel/, 'secondary')
+						.replace(/cke_dialog_ui_button_(\w+)/, '')
+						+ ' wikia-button';
+				}
+
+				if (typeof elementDefinition['className'] != 'undefined') {
+					elementDefinition['className'] += ' wikia-button';
+
+					if (typeof elementDefinition['buttonType'] != 'undefined') {
+						elementDefinition['className'] += ' ' + elementDefinition['buttonType'];
+					}
+				}
+				else {
+					elementDefinition['className'] = 'wikia-button';
+				}
+				// wikia: end
+
 				var outerDefinition = CKEDITOR.tools.extend( {}, elementDefinition );
 				delete outerDefinition.style;
 
@@ -563,7 +583,7 @@ CKEDITOR.plugins.add( 'dialogui' );
 					},
 					'<span id="' + labelId + '" class="cke_dialog_ui_button">' +
 						CKEDITOR.tools.htmlEncode( elementDefinition.label ) +
-					'</span>' );
+					'</span>');
 			},
 
 			/**

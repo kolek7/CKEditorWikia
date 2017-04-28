@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -105,6 +105,10 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 
 		if ( !isValid )
 		{
+			// Wikia - start
+			var dialog = this.getDialog();
+			dialog.fire('notvalid', {item: this});
+			// Wikia - end
 			if ( this.select )
 				this.select();
 			else
@@ -260,6 +264,9 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 		{
 			this.on( 'ok', function( evt )
 				{
+					// Wikia change - begin @author: kflorence
+					editor.fire( 'dialogOk', this );
+					// Wikia change - end
 					// Dialog confirm might probably introduce content changes (#5415).
 					editor.fire( 'saveSnapshot' );
 					setTimeout( function () { editor.fire( 'saveSnapshot' ); }, 0 );
@@ -272,6 +279,9 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 		{
 			this.on( 'cancel', function( evt )
 				{
+					// Wikia change - begin @author: kflorence
+					editor.fire( 'dialogCancel', this );
+					// Wikia change - end
 					if ( definition.onCancel.call( this, evt ) === false )
 						evt.data.hide = false;
 				});
@@ -320,6 +330,13 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 
 		this.on( 'cancel', function( evt )
 			{
+				// Wikia change - begin
+				// don't show an alert about dialog changes when close is clicked (r25573 refactored)
+				if (this.definition.doNotCheckForChanged) {
+					return;
+				}
+				// Wikia change - end
+
 				iterContents( function( item )
 					{
 						if ( item.isChanged() )
@@ -333,6 +350,11 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 
 		this.parts.close.on( 'click', function( evt )
 				{
+					// Wikia - start
+					this.fire('close', {close: true});
+					editor.fire( 'dialogClose', this );
+					// Wikia - end
+
 					if ( this.fire( 'cancel', { hide : true } ).hide !== false )
 						this.hide();
 					evt.data.preventDefault();
@@ -819,6 +841,10 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 			// Register the Esc hotkeys.
 			registerAccessKey( this, this, '\x1b', null, function()
 					{
+						// Wikia - start
+						this.fireOnce('close', {esc: true});
+						// Wikia - end
+
 						this.getButton( 'cancel' ) && this.getButton( 'cancel' ).click();
 					} );
 
@@ -1026,6 +1052,9 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 						' hidefocus="true"',
 						' role="tab">',
 							contents.label,
+							// Wikia - start
+							'<img class="chevron" src="' + window.wgBlankImgUrl + '" />',
+							// Wikia - end
 					'</a>'
 				].join( '' ) );
 
@@ -1467,6 +1496,11 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 						onClick : function( evt )
 						{
 							var dialog = evt.data.dialog;
+
+							// Wikia - start
+							dialog.fireOnce('cancelClicked');
+							// Wikia - end
+
 							if ( dialog.fire( 'cancel', { hide : true } ).hide !== false )
 								dialog.hide();
 						}
@@ -1510,10 +1544,15 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 
 	var defaultDialogDefinition =
 	{
-		resizable : CKEDITOR.DIALOG_RESIZE_BOTH,
+		resizable : CKEDITOR.DIALOG_RESIZE_NONE, /*wikia change - bugid:6902*/
 		minWidth : 600,
 		minHeight : 400,
-		buttons : [ CKEDITOR.dialog.okButton, CKEDITOR.dialog.cancelButton ]
+		//buttons : [ CKEDITOR.dialog.okButton, CKEDITOR.dialog.cancelButton ]
+
+		// Wikia - start
+		// Oasis: don't show cancel button as there's close button
+		buttons : [ CKEDITOR.dialog.okButton ]
+		// Wikia - end
 	};
 
 	// Tool function used to return an item from an array based on its id
@@ -1977,12 +2016,12 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 		if ( !coverElement )
 		{
 			var html = [
-					'<div tabIndex="-1" style="position: ', ( CKEDITOR.env.ie6Compat ? 'absolute' : 'fixed' ),
-					'; z-index: ', baseFloatZIndex,
-					'; top: 0px; left: 0px; ',
-					( !CKEDITOR.env.ie6Compat ? 'background-color: ' + backgroundColorStyle : '' ),
+				'<div tabIndex="-1" style="position: ', ( CKEDITOR.env.ie6Compat ? 'absolute' : 'fixed' ),
+				'; z-index: ', baseFloatZIndex,
+				'; top: 0px; left: 0px; ',
+				( !CKEDITOR.env.ie6Compat ? 'background-color: ' + backgroundColorStyle : '' ),
 					'" class="cke_dialog_background_cover">'
-				];
+			];
 
 			if ( CKEDITOR.env.ie6Compat )
 			{
@@ -2989,7 +3028,21 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 							passed = passed || functions[i]( value );
 					}
 
-					return !passed ? msg : true;
+					if ( !passed )
+					{
+						if ( msg !== undefined ) {
+							// Wikia - start
+							//alert( msg );
+							var editor = this.getDialog()._.editor;
+							RTE.tools.alert(editor.lang.errorPopupTitle, msg);
+							// Wikia - end
+						}
+						if ( this && ( this.select || this.focus ) )
+							( this.select || this.focus )();
+						return false;
+					}
+
+					return true;
 				};
 			},
 
@@ -3002,7 +3055,25 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 				return function()
 				{
 					var value = this && this.getValue ? this.getValue() : arguments[0];
-					return !regex.test( value ) ? msg : true;
+					if ( !regex.test( value ) )
+					{
+						if ( msg !== undefined ) {
+							// Wikia - start
+							//alert( msg );
+							var editor = this.getDialog()._.editor;
+							RTE.tools.alert(editor.lang.errorPopupTitle, msg);
+							// Wikia - end
+						}
+						if ( this && ( this.select || this.focus ) )
+						{
+							if ( this.select )
+								this.select();
+							else
+								this.focus();
+						}
+						return false;
+					}
+					return true;
 				};
 			},
 
@@ -3085,8 +3156,9 @@ CKEDITOR.DIALOG_RESIZE_BOTH = 3;
 				var dialogDefinitions = CKEDITOR.dialog._.dialogDefinitions[ dialogName ],
 						dialogSkin = this.skin.dialog;
 
-				if ( CKEDITOR.dialog._.currentTop === null )
-					showCover( this );
+//				MiniEditor -- it looks like this is not necessary?
+//				if ( CKEDITOR.dialog._.currentTop === null )
+//					showCover( this );
 
 				// If the dialogDefinition is already loaded, open it immediately.
 				if ( typeof dialogDefinitions == 'function' && dialogSkin._isLoaded )

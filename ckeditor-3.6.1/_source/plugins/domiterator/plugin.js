@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -254,6 +254,10 @@ CKEDITOR.plugins.add( 'domiterator' );
 					this._.nextNode = null;
 					return null;
 				}
+
+				// Wikia - start
+				range.enlargeFormattables();
+				// Wikia - end
 
 				var startPath = new CKEDITOR.dom.elementPath( range.startContainer );
 				var startBlockLimit = startPath.blockLimit,

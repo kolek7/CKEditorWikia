@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -149,7 +149,12 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	{
 		this.editor = editor;
 
-		editor.fire( 'beforeUndoImage' );
+ 		editor.fire( 'beforeUndoImage' );
+
+		// Wikia - start
+		// TODO: still needed?
+		editor.fire('beforeCreateUndoSnapshot');
+		// Wikia - end
 
 		var contents = editor.getSnapshot(),
 			selection	= contents && editor.getSelection();
@@ -160,7 +165,12 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 		this.contents	= contents;
 		this.bookmarks	= selection && selection.createBookmarks2( true );
 
-		editor.fire( 'afterUndoImage' );
+		// Wikia - start
+		// TODO: still neded?
+		editor.fire('afterCreateUndoSnapshot');
+		// Wikia - end
+
+ 		editor.fire( 'afterUndoImage' );
 	};
 
 	// Attributes that browser may changing them when setting via innerHTML.
@@ -381,6 +391,8 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 		{
 			var snapshots = this.snapshots;
 
+			RTE.log('undo save');
+
 			// Get a content image.
 			if ( !image )
 				image = new Image( this.editor );
@@ -433,6 +445,10 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			// the original snapshot due to dom change. (#4622)
 			this.update();
 			this.fireChange();
+
+			// Wikia - start
+			this.editor.fire('wysiwygModeReady');
+			// Wikia - end
 		},
 
 		// Get the closest available image.

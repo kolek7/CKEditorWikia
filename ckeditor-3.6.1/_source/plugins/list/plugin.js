@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -100,6 +100,15 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 					if ( !rootNode || listArray[ currentIndex ].parent.getName() != rootNode.getName() )
 					{
 						rootNode = listArray[ currentIndex ].parent.clone( false, 1 );
+
+						// Wikia - start
+						// RT #33882
+						if (item.toIndent) {
+							rootNode.removeAttribute('data-rte-empty-lines-before');
+							rootNode.setAttribute('data-rte-new-node', true);
+						}
+						// Wikia - end
+
 						dir && rootNode.setAttribute( 'dir', dir );
 						retval.append( rootNode );
 					}
@@ -235,6 +244,15 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			element,
 			i;
 
+		// Wikia - start
+		// disable lists buttons when inside a heading
+		var nodeName = path.block ? path.block.getName() : '';
+
+		if ( (/h\d/).test(nodeName) ) {
+			return this.setState( CKEDITOR.TRISTATE_DISABLED );
+		}
+		// Wikia - end
+
 		// Grouping should only happen under blockLimit.(#3940).
 		for ( i = 0 ; i < elements.length && ( element = elements[ i ] )
 			  && !element.equals( blockLimit ); i++ )
@@ -357,6 +375,10 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 		var insertAnchor = listContents[ listContents.length - 1 ].getNext(),
 			listNode = doc.createElement( this.type );
 
+		// Wikia - start
+		editor.fire('listCreated', {listNode: listNode});
+		// Wikia - end
+
 		listsCreated.push( listNode );
 
 		var contentBlock, listItem;
@@ -470,7 +492,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			var doc = editor.document,
 				config = editor.config,
 				selection = editor.getSelection(),
-				ranges = selection && selection.getRanges( true );
+				ranges = selection && selection.getRanges( /*true*/ CKEDITOR.ONLY_FORMATTABLES );
 
 			// There should be at least one selected range.
 			if ( !ranges || ranges.length < 1 )
