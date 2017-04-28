@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -72,7 +72,12 @@ CKEDITOR.focusManager.prototype =
 
 			var editor = this._.editor;
 
-			editor.container.getChild( 1 ).addClass( 'cke_focus' );
+			// Wikia - start
+			var firstChild = editor.container.getChild(1);
+			if (firstChild) {
+				firstChild.addClass( 'cke_focus' );
+			}
+			// Wikia - end
 
 			this.hasFocus = true;
 			editor.fire( 'focus' );
@@ -119,7 +124,12 @@ CKEDITOR.focusManager.prototype =
 		{
 			var editor = this._.editor;
 
-			editor.container.getChild( 1 ).removeClass( 'cke_focus' );
+			// Wikia - start
+			var firstChild = editor.container.getChild(1);
+			if (firstChild) {
+				firstChild.removeClass( 'cke_focus' );
+			}
+			// Wikia - end
 
 			this.hasFocus = false;
 			editor.fire( 'blur' );

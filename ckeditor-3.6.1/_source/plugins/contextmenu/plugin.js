@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -95,6 +95,11 @@ CKEDITOR.plugins.add( 'contextmenu',
 								return;
 
 
+							// Wikia - start
+							// store node contextmenu is shown for (fix for Chrome)
+							this.originalEvent = new CKEDITOR.dom.event(domEvent.$);
+							// Wikia - end
+
 							// Cancel the browser context menu.
 							domEvent.preventDefault();
 
@@ -143,6 +148,10 @@ CKEDITOR.plugins.add( 'contextmenu',
 
 				open : function( offsetParent, corner, offsetX, offsetY )
 				{
+					// Wikia - start
+					this.editor.fire('contextMenuOnOpen', {menu: this});
+					// Wikia - end
+
 					this.editor.focus();
 					offsetParent = offsetParent || CKEDITOR.document.getDocumentElement();
 					this.show( offsetParent, corner, offsetX, offsetY );
@@ -162,6 +171,18 @@ CKEDITOR.plugins.add( 'contextmenu',
 						editor.contextMenu.open( editor.document.getBody() );
 					}
 			});
+
+		// Wikia - start
+		var base = editor.contextMenu._;
+
+		base.onClickOriginal = base.onClick;
+		base.onClick = function(item) {
+			// fire event used for click tracking
+			editor.fire('contextMenuOnClick', {menu: editor.contextMenu, item: item});
+
+			base.onClickOriginal(item);
+		};
+		// Wikia - end
 	}
 });
 

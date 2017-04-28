@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -199,7 +199,7 @@ CKEDITOR.tools.extend( CKEDITOR.dom.element.prototype,
 				this.$.insertBefore( node.$, this.$.firstChild );
 			else
 				this.$.appendChild( node.$ );
-
+			
 			return node;
 		},
 
@@ -345,7 +345,18 @@ CKEDITOR.tools.extend( CKEDITOR.dom.element.prototype,
 		 */
 		getHtml : function()
 		{
-			var retval = this.$.innerHTML;
+			//var retval = this.$.innerHTML;
+			//Wikia Start - fixing this bug: http://dev.ckeditor.com/ticket/4566
+			var retval;
+			
+			try {
+				retval = this.$.innerHTML;
+			} catch(err) {
+				return "";
+			}
+			//Wikia End
+
+
 			// Strip <?xml:namespace> tags in IE. (#3341).
 			return CKEDITOR.env.ie ? retval.replace( /<\?[^>]*>/g, '' ) : retval;
 		},
@@ -638,7 +649,7 @@ CKEDITOR.tools.extend( CKEDITOR.dom.element.prototype,
 			if ( CKEDITOR.env.ie && ! ( document.documentMode > 8 ) )
 			{
 				var scopeName = this.$.scopeName;
-				if ( scopeName != 'HTML' )
+				if ( typeof scopeName != 'undefined' && scopeName != 'HTML' )
 					nodeName = scopeName.toLowerCase() + ':' + nodeName;
 			}
 
@@ -656,7 +667,10 @@ CKEDITOR.tools.extend( CKEDITOR.dom.element.prototype,
 		 */
 		getValue : function()
 		{
-			return this.$.value;
+			// wikia change start: remove placeholder text (BugId:35209)
+			var value = this.$.value;
+			return ( CKEDITOR.env.ie && this.$.getAttribute( 'placeholder' ) == value ) ? '' : value;
+			// wikia change end
 		},
 
 		/**

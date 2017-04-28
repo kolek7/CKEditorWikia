@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -7,7 +7,6 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
  * @fileOverview Defines the {@link CKEDITOR.env} object, which constains
  *		environment and browser information.
  */
-
 if ( !CKEDITOR.env )
 {
 	/**
@@ -28,7 +27,11 @@ if ( !CKEDITOR.env )
 			 * if ( CKEDITOR.env.ie )
 			 *     alert( "I'm on IE!" );
 			 */
-			ie		: /*@cc_on!@*/false,
+			// Wikia change - begin
+			// fix for compatibility with Closure - wrap using evil eval()
+			// @see http://code.google.com/intl/pl/closure/compiler/docs/limitations.html
+			ie	: eval("/*@cc_on!@*/false"),
+			// Wikia change - end
 
 			/**
 			 * Indicates that CKEditor is running on Opera.
@@ -56,7 +59,7 @@ if ( !CKEDITOR.env )
 			 * if ( CKEDITOR.env.air )
 			 *     alert( "I'm on AIR!" );
 			 */
-			air		: ( agent.indexOf( ' adobeair/' ) > -1 ),
+			air	: ( agent.indexOf( ' adobeair/' ) > -1 ),
 
 			/**
 			 * Indicates that CKEditor is running on Macintosh.
@@ -125,14 +128,22 @@ if ( !CKEDITOR.env )
 		 *     alert( "I'm riding a gecko!" );
 		 */
 		env.gecko = ( navigator.product == 'Gecko' && !env.webkit && !env.opera );
+		
+		if(!env.ie) {
+			eval('env.ie  = /*@cc_on!@*/false;');	
+		}
 
 		var version = 0;
-
+		
 		// Internet Explorer 6.0+
 		if ( env.ie )
 		{
 			version = parseFloat( agent.match( /msie (\d+)/ )[1] );
 
+			// Wikia change - start (bugid:94726)
+			env.ieVersion == version;
+			// Wikia change - end
+			
 			/**
 			 * Indicates that CKEditor is running on Internet Explorer 8.
 			 * @name CKEDITOR.env.ie8
@@ -194,6 +205,11 @@ if ( !CKEDITOR.env )
 			var geckoRelease = agent.match( /rv:([\d\.]+)/ );
 			if ( geckoRelease )
 			{
+				// Wikia -- start
+				// store full version on Firefox (RT #69635)
+				env.geckoRelease = geckoRelease[1];
+				// Wikia -- end
+
 				geckoRelease = geckoRelease[1].split( '.' );
 				version = geckoRelease[0] * 10000 + ( geckoRelease[1] || 0 ) * 100 + ( geckoRelease[2] || 0 ) * 1;
 			}
@@ -238,6 +254,7 @@ if ( !CKEDITOR.env )
 		 * if ( CKEDITOR.env.isCompatible )
 		 *     alert( "Your browser is pretty cool!" );
 		 */
+		
 		env.isCompatible =
 			!env.mobile && (
 			( env.ie && version >= 6 ) ||

@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -45,6 +45,13 @@ CKEDITOR.command = function( editor, commandDefinition )
 	{
 		if ( this.state == CKEDITOR.TRISTATE_DISABLED )
 			return false;
+
+		// Wikia - start
+		// disable toolbar buttons until editor is fully loaded (RT #40472)
+		if ($.inArray(editor, RTE.loaded)<0) {
+			return false;
+		}
+		// Wikia - end
 
 		if ( this.editorFocus )     // Give editor focus if necessary (#4355).
 			editor.focus();

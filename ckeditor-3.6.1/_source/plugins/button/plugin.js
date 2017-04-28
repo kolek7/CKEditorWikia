@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -89,6 +89,10 @@ CKEDITOR.ui.button.prototype =
 			},
 			execute : function()
 			{
+				// Wikia - start
+				this.editor.fire('buttonClick', {button: this.button});
+				// Wikia - end
+
 				// IE 6 needs some time before execution (#7922)
 				if ( CKEDITOR.env.ie && CKEDITOR.env.version < 7 )
 					CKEDITOR.tools.setTimeout( function(){ this.button.click( editor ); }, 0, this );
@@ -97,30 +101,29 @@ CKEDITOR.ui.button.prototype =
 			}
 		};
 
-		var keydownFn = CKEDITOR.tools.addFunction( function( ev )
-			{
-				if ( instance.onkey )
-				{
-					ev = new CKEDITOR.dom.event( ev );
-					return ( instance.onkey( instance, ev.getKeystroke() ) !== false );
-				}
-			});
+ 		var keydownFn = CKEDITOR.tools.addFunction( function( ev )
+ 			{
+ 				if ( instance.onkey )
+ 				{
+ 					ev = new CKEDITOR.dom.event( ev );
+ 					return ( instance.onkey( instance, ev.getKeystroke() ) !== false );
+ 				}
+ 			});
 
-		var focusFn = CKEDITOR.tools.addFunction( function( ev )
-			{
-				var retVal;
+ 		var focusFn = CKEDITOR.tools.addFunction( function( ev )
+ 			{
+ 				var retVal;
 
-				if ( instance.onfocus )
-					  retVal = ( instance.onfocus( instance, new CKEDITOR.dom.event( ev ) ) !== false );
+ 				if ( instance.onfocus )
+ 					  retVal = ( instance.onfocus( instance, new CKEDITOR.dom.event( ev ) ) !== false );
 
-				// FF2: prevent focus event been bubbled up to editor container, which caused unexpected editor focus.
-				if ( CKEDITOR.env.gecko && CKEDITOR.env.version < 10900 )
-					  ev.preventBubble();
-				return retVal;
-			});
+ 				// FF2: prevent focus event been bubbled up to editor container, which caused unexpected editor focus.
+ 				if ( CKEDITOR.env.gecko && CKEDITOR.env.version < 10900 )
+ 					  ev.preventBubble();
+ 				return retVal;
+ 			});
 
 		instance.clickFn = clickFn = CKEDITOR.tools.addFunction( instance.execute, instance );
-
 
 		// Indicate a mode sensitive button.
 		if ( this.modes )
@@ -137,17 +140,17 @@ CKEDITOR.ui.button.prototype =
 				{
 					// Restore saved button state.
 					var state = this.modes[ mode ] ? modeStates[ mode ] != undefined ? modeStates[ mode ] :
-							CKEDITOR.TRISTATE_OFF : CKEDITOR.TRISTATE_DISABLED;
+						CKEDITOR.TRISTATE_OFF : CKEDITOR.TRISTATE_DISABLED;
 
 					this.setState( editor.readOnly && !this.readOnly ? CKEDITOR.TRISTATE_DISABLED : state );
 				}
 			}
 
 			editor.on( 'beforeModeUnload', function()
-				{
+					{
 					if ( editor.mode && this._.state != CKEDITOR.TRISTATE_DISABLED )
 						modeStates[ editor.mode ] = this._.state;
-				}, this );
+					}, this );
 
 			editor.on( 'mode', updateState, this);
 
@@ -163,6 +166,15 @@ CKEDITOR.ui.button.prototype =
 			{
 				command.on( 'state', function()
 					{
+						// Wikia - start
+						// disable toolbar buttons until editor is fully loaded (RT #40472)
+						// TODO: move to more generic place
+						if ($.inArray(editor, RTE.loaded)<0) {
+							this.setState(CKEDITOR.TRISTATE_DISABLED);
+							return;
+						}
+						// Wikia - end
+
 						this.setState( command.state );
 					}, this);
 
@@ -179,17 +191,23 @@ CKEDITOR.ui.button.prototype =
 		if ( this.className )
 			classes += ' ' + this.className;
 
+		// Wikia - start
+		if (this.wrapperClassName) {
+			classes += ' ' + this.wrapperClassName;
+		}
+
 		output.push(
-			'<span class="cke_button' + ( this.icon && this.icon.indexOf( '.png' ) == -1 ? ' cke_noalphafix' : '' ) + '">',
+			'<span class="cke_button ' + classes + ( this.icon && this.icon.indexOf( '.png' ) == -1 ? ' cke_noalphafix' : '' ) + '">',
 			'<a id="', id, '"' +
 				' class="', classes, '"',
 				env.gecko && env.version >= 10900 && !env.hc  ? '' : '" href="javascript:void(\''+ ( this.title || '' ).replace( "'", '' )+ '\')"',
 				' title="', this.title, '"' +
 				' tabindex="-1"' +
 				' hidefocus="true"' +
-			    ' role="button"' +
+			    	' role="button"' +
 				' aria-labelledby="' + id + '_label"' +
 				( this.hasArrow ?  ' aria-haspopup="true"' : '' ) );
+		// Wikia - end
 
 		// Some browsers don't cancel key events in the keydown but in the
 		// keypress.
@@ -209,21 +227,26 @@ CKEDITOR.ui.button.prototype =
 		}
 
 		output.push(
-					' onkeydown="return CKEDITOR.tools.callFunction(', keydownFn, ', event);"' +
-					' onfocus="return CKEDITOR.tools.callFunction(', focusFn,', event);" ' +
-					( CKEDITOR.env.ie ? 'onclick="return false;" onmouseup' : 'onclick' ) +		// #188
-						'="CKEDITOR.tools.callFunction(', clickFn, ', this); return false;">' +
-					'<span class="cke_icon"' );
+				' onkeydown="return CKEDITOR.tools.callFunction(', keydownFn, ', event);"' +
+				' onfocus="return CKEDITOR.tools.callFunction(', focusFn,', event);" ' +
+				( CKEDITOR.env.ie ? 'onclick="return false;" onmouseup' : 'onclick' ) +         // #188
+					'="CKEDITOR.tools.callFunction(', clickFn, ', this); return false;">');
 
-		if ( this.icon )
-		{
-			var offset = ( this.iconOffset || 0 ) * -16;
-			output.push( ' style="background-image:url(', CKEDITOR.getUrl( this.icon ), ');background-position:0 ' + offset + 'px;"' );
+		// Wikia - start
+		if (this.hasIcon !== false) {
+			output.push('<span class="cke_icon"' );
+
+			if ( this.icon )
+			{
+				var offset = ( this.iconOffset || 0 ) * -16;
+				output.push( ' style="background-image:url(', CKEDITOR.getUrl( this.icon ), ');background-position:0 ' + offset + 'px;"' );
+			}
+
+			output.push('>&nbsp;</span>');
 		}
+		// Wikia - end
 
-		output.push(
-					'>&nbsp;</span>' +
-					'<span id="', id, '_label" class="cke_label">', this.label, '</span>' );
+		output.push( '<span id="', id, '_label" class="cke_label">', this.label, '</span>' );
 
 		if ( this.hasArrow )
 		{

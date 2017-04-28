@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -509,8 +509,13 @@ CKEDITOR.dialog.add( 'cellProperties', function( editor )
 					bookmarks = selection.createBookmarks();
 
 				var cells = this.cells;
-				for ( var i = 0 ; i < cells.length ; i++ )
+				for ( var i = 0 ; i < cells.length ; i++ ) {
 					this.commitContent( cells[ i ] );
+
+					// Wikia - remove data-rte-attribs and data-rte-style attributes, so changes made in popup will be saved in wikitext
+					cells[i].removeAttribute('data-rte-attribs');
+					cells[i].removeAttribute('data-rte-style');
+				}
 
 				selection.selectBookmarks( bookmarks );
 

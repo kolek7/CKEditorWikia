@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -481,6 +481,11 @@ CKEDITOR.STYLE_OBJECT = 3;
 				var nodeIsReadonly = nodeName && ( currentNode.getAttribute( 'contentEditable' ) == 'false' );
 				var nodeIsNoStyle = nodeName && currentNode.getAttribute( 'data-nostyle' );
 
+				// Wikia - start
+				// allow PLB placeholder paragraph to be wrapped by inline style element (BugID #1573)
+				var nodeIsFormatablePlaceholder = nodeIsReadonly && (currentNode.getAttribute('formateditable') == 'true');
+				// Wikia - end
+
 				if ( nodeName && currentNode.data( 'cke-bookmark' ) )
 				{
 					currentNode = currentNode.getNextSourceNode( true );
@@ -492,7 +497,12 @@ CKEDITOR.STYLE_OBJECT = 3;
 					&& !nodeIsNoStyle
 					&& ( !nodeIsReadonly || includeReadonly )
 					&& ( currentNode.getPosition( lastNode ) | CKEDITOR.POSITION_PRECEDING | CKEDITOR.POSITION_IDENTICAL | CKEDITOR.POSITION_IS_CONTAINED ) == ( CKEDITOR.POSITION_PRECEDING + CKEDITOR.POSITION_IDENTICAL + CKEDITOR.POSITION_IS_CONTAINED )
-					&& ( !def.childRule || def.childRule( currentNode ) ) ) )
+					&& ( !def.childRule || def.childRule( currentNode ) ) )
+					// Wikia - start
+					// see above (BugID #1573)
+					|| nodeIsFormatablePlaceholder
+					// Wikia  - end
+					)
 				{
 					var currentParent = currentNode.getParent();
 
@@ -548,6 +558,10 @@ CKEDITOR.STYLE_OBJECT = 3;
 			// Apply the style if we have something to which apply it.
 			if ( applyStyle && styleRange && !styleRange.collapsed )
 			{
+				// Wikia - start
+				styleRange.enlargeFormattables();
+				// Wikia - end
+
 				// Build the style element, based on the style object definition.
 				var styleNode = getElement( this, document ),
 					styleHasAttrs = styleNode.hasAttributes();
@@ -911,14 +925,14 @@ CKEDITOR.STYLE_OBJECT = 3;
 				if ( block.is( 'pre' ) )
 				{
 					var newBlock = this._.enterMode == CKEDITOR.ENTER_BR ?
-								null : range.document.createElement(
-									this._.enterMode == CKEDITOR.ENTER_P ? 'p' : 'div' );
+						null : range.document.createElement(
+								this._.enterMode == CKEDITOR.ENTER_P ? 'p' : 'div' );
 
 					newBlock && block.copyAttributes( newBlock );
 					replaceBlock( block, newBlock );
 				}
 				else
-					 removeFromElement( this, block, 1 );
+					removeFromElement( this, block, 1 );
 			}
 		}
 
@@ -930,6 +944,12 @@ CKEDITOR.STYLE_OBJECT = 3;
 	// when necessary.(#3188)
 	function replaceBlock( block, newBlock )
 	{
+		// Wikia - start
+		// The block may be an orphan due to the formattables handling
+		if ( !block.$.parentNode )
+			return;
+		// Wikia - end
+
 		// Block is to be removed, create a temp element to
 		// save contents.
 		var removeBlock = !newBlock;
@@ -940,7 +960,7 @@ CKEDITOR.STYLE_OBJECT = 3;
 		}
 
 		var newBlockIsPre	= newBlock && newBlock.is( 'pre' );
-		var blockIsPre	= block.is( 'pre' );
+		var blockIsPre		= block.is( 'pre' );
 
 		var isToPre	= newBlockIsPre && !blockIsPre;
 		var isFromPre	= !newBlockIsPre && blockIsPre;
@@ -1522,13 +1542,21 @@ CKEDITOR.STYLE_OBJECT = 3;
 		var selection = document.getSelection(),
 			// Bookmark the range so we can re-select it after processing.
 			bookmarks = selection.createBookmarks( 1 ),
-			ranges = selection.getRanges(),
+			ranges = selection.getRanges( /* Wikia - Original: 1 */ CKEDITOR.ONLY_FORMATTABLES ),
 			func = remove ? this.removeFromRange : this.applyToRange,
 			range;
+
+		// Wikia - start
+		document.fire('applyStyle', {style: this.element, remove: remove, selection: selection, ranges: ranges});
+		// Wikia - end
 
 		var iterator = ranges.createIterator();
 		while ( ( range = iterator.getNextRange() ) )
 			func.call( this, range );
+
+		// Wikia - start
+		document.fire('afterApplyStyle', {style: this.element, remove: remove, selection: selection, ranges: ranges});
+		// Wikia - end
 
 		if ( bookmarks.length == 1 && bookmarks[ 0 ].collapsed )
 		{

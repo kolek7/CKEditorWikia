@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -46,7 +46,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 					this.lastElement = e;
 
 				var elementName = e.getName();
-				if ( CKEDITOR.env.ie && e.$.scopeName != 'HTML' )
+				if ( CKEDITOR.env.ie && CKEDITOR.env.ieVersion < 10 && e.$.scopeName != 'HTML' ) // Wikia change - added ieVersion (bugid:94726)
 					elementName = e.$.scopeName.toLowerCase() + ':' + elementName;
 
 				if ( !blockLimit )
@@ -115,5 +115,15 @@ CKEDITOR.dom.elementPath.prototype =
 		}
 
 		return null;
+	},
+	
+	isContentEditable : function() {
+		var e = this.elements;
+		var state = "true";
+		for (var i = e.length - 1 ; i >= 0 ; i-- ) {
+			if (e[i].$.contentEditable != "inherit")
+				state = e[i].$.contentEditable;
+		}
+		return state == "true";
 	}
 };

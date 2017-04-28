@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -56,12 +56,12 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	}
 
 	function handleMixedDirContent( evt )
-	{
-		var editor = evt.editor,
-			directionNode = evt.data.path.block || evt.data.path.blockLimit;
+        {
+                var editor = evt.editor,
+                        directionNode = evt.data.path.block || evt.data.path.blockLimit;
 
-		editor.fire( 'contentDirChanged', directionNode ? directionNode.getComputedStyle( 'direction' ) : editor.lang.dir );
-	}
+                editor.fire( 'contentDirChanged', directionNode ? directionNode.getComputedStyle( 'direction' ) : editor.lang.dir );
+        }
 
 	/**
 	 * Returns element with possibility of applying the direction.

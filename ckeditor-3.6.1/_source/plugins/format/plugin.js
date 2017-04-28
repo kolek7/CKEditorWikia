@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -23,6 +23,10 @@ CKEDITOR.plugins.add( 'format',
 			styles[ tag ] = new CKEDITOR.style( config[ 'format_' + tag ] );
 			styles[ tag ]._.enterMode = editor.config.enterMode;
 		}
+
+		// Wikia - start
+		// list of elements for which format dropdown should be disabled
+		var disabledElements = config.format_disabled.split(';');
 
 		editor.ui.addRichCombo( 'Format',
 			{
@@ -73,6 +77,17 @@ CKEDITOR.plugins.add( 'format',
 							var currentTag = this.getValue();
 
 							var elementPath = ev.data.path;
+
+							// Wikia - start
+							// check list of elements for which format dropdown should be disabled
+							if (jQuery.inArray(currentTag, disabledElements) > -1) {
+								this.setState(CKEDITOR.TRISTATE_DISABLED);
+								return;
+							}
+							else {
+								this.setState(CKEDITOR.TRISTATE_OFF);
+							}
+							// Wikia - end
 
 							for ( var tag in styles )
 							{
@@ -195,3 +210,8 @@ CKEDITOR.config.format_h5 = { element : 'h5' };
  * config.format_h6 = { element : 'h6', attributes : { 'class' : 'contentTitle6' } };
  */
 CKEDITOR.config.format_h6 = { element : 'h6' };
+
+/**
+ * The list of elements for which format dropdown should be disabled
+ */
+CKEDITOR.config.format_disabled = 'li;dt;dd';

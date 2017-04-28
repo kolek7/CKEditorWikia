@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -218,7 +218,15 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 
 					if ( !table.getAttribute( 'style' ) )
 						table.removeAttribute( 'style' );
+					// Wikia change start - this is needed to prevent styles from losing whitespace
+					// during reverse parsing (BugId:34438).
+					else
+						table.setAttribute( 'data-rte-style', table.getAttribute( 'style' ) );
+					// Wikia change end
 				}
+
+				// Wikia change - add table class
+				table.addClass('article-table');
 
 				// Insert the table element if we're creating one.
 				if ( !this._.selectedElement )
@@ -271,7 +279,11 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 													&& value > 0;
 												if ( !pass )
 												{
-													alert( editor.lang.table.invalidRows );
+													// Wikia - start
+													//alert( editor.lang.table.invalidRows );
+													RTE.tools.alert(editor.lang.errorPopupTitle, editor.lang.table.invalidRows);
+													// Wikia - end
+
 													this.select();
 												}
 												return pass;
@@ -297,7 +309,10 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 													&& value > 0;
 												if ( !pass )
 												{
-													alert( editor.lang.table.invalidCols );
+													// Wikia - start
+													//alert( editor.lang.table.invalidCols );
+													RTE.tools.alert(editor.lang.errorPopupTitle, editor.lang.table.invalidCols);
+													// Wikia - end
 													this.select();
 												}
 												return pass;
@@ -315,7 +330,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 										{
 											type : 'select',
 											id : 'selHeaders',
-											'default' : '',
+											'default' : 'row', // Wikia - changed default from ''
 											label : editor.lang.table.headers,
 											items :
 											[
@@ -352,7 +367,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 										{
 											type : 'text',
 											id : 'txtBorder',
-											'default' : 1,
+											'default' : '0', // Wikia - changed default from 1
 											label : editor.lang.table.border,
 											controlStyle : 'width:3em',
 											validate : CKEDITOR.dialog.validate['number']( editor.lang.table.invalidBorder ),
@@ -386,10 +401,16 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 											},
 											commit : function( data, selectedTable )
 											{
-												if ( this.getValue() )
-													selectedTable.setAttribute( 'align', this.getValue() );
-												else
-													selectedTable.removeAttribute( 'align' );
+												// Wikia change start - use style attributes instead of align (BugId:34438)
+												var value = this.getValue();
+												if ( value ) {
+													value == 'center' ? selectedTable.setStyle( 'margin', '0 auto' ) :
+														selectedTable.setStyle( 'float', value );
+												} else {
+													selectedTable.removeStyle( 'float' );
+													selectedTable.removeStyle( 'margin' );
+												}
+												// Wikia change end
 											}
 										}
 									]
@@ -565,7 +586,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 												captionElement.getItem( i ).remove();
 										}
 									}
-								},
+								}/*,
 								{
 									type : 'text',
 									id : 'txtSummary',
@@ -581,7 +602,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 										else
 											selectedTable.removeAttribute( 'summary' );
 									}
-								}
+								}*/
 							]
 						}
 					]

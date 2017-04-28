@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -364,6 +364,12 @@ CKEDITOR.dom.range = function( document )
 			}
 			else if ( node.type == CKEDITOR.NODE_ELEMENT )
 			{
+				// Wikia - start
+				if (node.$.nodeType == CKEDITOR.NODE_COMMENT) {
+					return false;
+				}
+				// Wikia - end
+
 				// If there are non-empty inline elements (e.g. <img />), then we're not
 				// at the start.
 				if ( !inlineChildReqElements[ node.getName() ] )
@@ -785,7 +791,7 @@ CKEDITOR.dom.range = function( document )
 			var container = this.startContainer;
 			var offset = this.startOffset;
 
-			if ( container.type != CKEDITOR.NODE_ELEMENT )
+			if ( container.type != CKEDITOR.NODE_ELEMENT && container.type != CKEDITOR.NODE_COMMENT )
 			{
 				if ( !offset )
 					this.setStartBefore( container );
@@ -796,7 +802,7 @@ CKEDITOR.dom.range = function( document )
 			container = this.endContainer;
 			offset = this.endOffset;
 
-			if ( container.type != CKEDITOR.NODE_ELEMENT )
+			if ( container.type != CKEDITOR.NODE_ELEMENT && container.type != CKEDITOR.NODE_COMMENT )
 			{
 				if ( !offset )
 					this.setEndBefore( container );
@@ -1028,8 +1034,8 @@ CKEDITOR.dom.range = function( document )
 								// If this is a visible element.
 								// We need to check for the bookmark attribute because IE insists on
 								// rendering the display:none nodes we use for bookmarks. (#3363)
-								// Line-breaks (br) are rendered with zero width, which we don't want to include. (#7041)
-								if ( ( sibling.$.offsetWidth > 0 || excludeBrs && sibling.is( 'br' ) ) && !sibling.data( 'cke-bookmark' ) )
+ 								// Line-breaks (br) are rendered with zero width, which we don't want to include. (#7041)
+ 								if ( sibling.$.nodeType == CKEDITOR.NODE_ELEMENT && ( sibling.$.offsetWidth > 0  || excludeBrs && sibling.is( 'br' ) ) && !sibling.data( 'cke-bookmark' ) )
 								{
 									// We'll accept it only if we need
 									// whitespace, and this is an inline
@@ -1188,8 +1194,8 @@ CKEDITOR.dom.range = function( document )
 								// If this is a visible element.
 								// We need to check for the bookmark attribute because IE insists on
 								// rendering the display:none nodes we use for bookmarks. (#3363)
-								// Line-breaks (br) are rendered with zero width, which we don't want to include. (#7041)
-								if ( ( sibling.$.offsetWidth > 0 || excludeBrs && sibling.is( 'br' ) ) && !sibling.data( 'cke-bookmark' ) )
+ 								// Line-breaks (br) are rendered with zero width, which we don't want to include. (#7041)
+								if ( sibling.$.nodeType == CKEDITOR.NODE_ELEMENT && ( sibling.$.offsetWidth > 0 || excludeBrs && sibling.is( 'br' ) ) && !sibling.data( 'cke-bookmark' ) )
 								{
 									// We'll accept it only if we need
 									// whitespace, and this is an inline
@@ -1457,6 +1463,25 @@ CKEDITOR.dom.range = function( document )
 			}
 		},
 
+		// Wikia - start
+		enlargeFormattables : function ()
+		{
+			var node;
+			if (this.startContainer.isReadOnly()) {
+				if (node = this.startContainer.findFormattableAncestor()) {
+					this.setStartBefore(node);
+				}
+			}
+			if (this.endContainer.isReadOnly()) {
+				if (node = this.endContainer.findFormattableAncestor()) {
+					this.setEndAfter(node);
+				}
+			}
+
+			return this;
+		},
+		// Wikia - end
+
 		/**
 		 * Inserts a node at the start of the range. The range will be expanded
 		 * the contain the node.
@@ -1469,7 +1494,15 @@ CKEDITOR.dom.range = function( document )
 			var startContainer = this.startContainer;
 			var startOffset = this.startOffset;
 
-			var nextNode = startContainer.getChild( startOffset );
+			// Wikia - start
+			// RT #36070 (fix for IE when startContainer is HTML comment node)
+			if (typeof startContainer.getChild != 'function') {
+				var nextNode = new CKEDITOR.dom.element(startContainer.$.previousSibling /* DOMTextNode */);
+			}
+			else {
+				var nextNode = startContainer.getChild( startOffset );
+			}
+			// Wikia - end
 
 			if ( nextNode )
 				node.insertBefore( nextNode );
@@ -1637,6 +1670,9 @@ CKEDITOR.dom.range = function( document )
 
 			this.collapse( isStart );
 
+			// Wikia - start
+			this.enlargeFormattables();
+			// Wikia - end
 			this.enlarge( CKEDITOR.ENLARGE_BLOCK_CONTENTS );
 
 			this.extractContents().appendTo( fixedBlock );

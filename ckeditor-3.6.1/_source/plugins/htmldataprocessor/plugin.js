@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.html or http://ckeditor.com/license
 */
@@ -10,6 +10,13 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	var tailNbspRegex = /^[\t\r\n ]*(?:&nbsp;|\xa0)$/;
 
 	var protectedSourceMarker = '{cke_protected}';
+
+	// Wikia - start
+	// checks if given node is "raw" <br> - i.e. without data-rte-* attribs
+	function isRawBr(node) {
+		return node.type == CKEDITOR.NODE_ELEMENT && node.name == 'br' && (typeof node.attributes['data-rte-washtml'] == 'undefined');
+	}
+	// Wikia - end
 
 	// Return the last non-space child node of the block (#4344).
 	function lastNoneSpaceChild( block )
@@ -31,7 +38,9 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 		var children = block.children, lastChild = lastNoneSpaceChild( block );
 		if ( lastChild )
 		{
-			if ( ( fromSource || !CKEDITOR.env.ie ) && lastChild.type == CKEDITOR.NODE_ELEMENT && lastChild.name == 'br' )
+			// Wikia - start
+			// only remove trailing BR node if it didn't come from wikitext
+			if ( ( fromSource || !CKEDITOR.env.ie ) && isRawBr(lastChild) )
 				children.pop();
 			if ( lastChild.type == CKEDITOR.NODE_TEXT && tailNbspRegex.test( lastChild.value ) )
 				children.pop();
@@ -41,25 +50,26 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 	function blockNeedsExtension( block, fromSource, extendEmptyBlock )
 	{
 		if( !fromSource && ( !extendEmptyBlock ||
-			typeof extendEmptyBlock == 'function' && ( extendEmptyBlock( block ) === false ) ) )
+					typeof extendEmptyBlock == 'function' && ( extendEmptyBlock( block ) === false ) ) )
 			return false;
 
-        // 1. For IE version >=8,  empty blocks are displayed correctly themself in wysiwiyg;
-        // 2. For the rest, at least table cell and list item need no filler space.
-        // (#6248)
-        if ( fromSource && CKEDITOR.env.ie &&
-                ( document.documentMode > 7
-                || block.name in CKEDITOR.dtd.tr
-                || block.name in CKEDITOR.dtd.$listItem ) )
-            return false;
+		// 1. For IE version >=8,  empty blocks are displayed correctly themself in wysiwiyg;
+		// 2. For the rest, at least table cell and list item need no filler space.
+		// (#6248)
+		if ( fromSource && CKEDITOR.env.ie &&
+				( document.documentMode > 7
+				  || block.name in CKEDITOR.dtd.tr
+				  || block.name in CKEDITOR.dtd.$listItem ) )
+			return false;
 
 		var lastChild = lastNoneSpaceChild( block );
 
+		// Wikia - start
 		return !lastChild || lastChild &&
-				( lastChild.type == CKEDITOR.NODE_ELEMENT && lastChild.name == 'br'
-				// Some of the controls in form needs extension too,
-				// to move cursor at the end of the form. (#4791)
-				|| block.name == 'form' && lastChild.name == 'input' );
+			  // Some of the controls in form needs extension too,
+			  // to move cursor at the end of the form. (#4791)
+			  ( block.name == 'form' && lastChild.name == 'input' );
+		// Wikia -end
 	}
 
 	function getBlockExtension( isOutput, emptyBlockFiller )
@@ -77,6 +87,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 			}
 		};
 	}
+
 
 	var dtd = CKEDITOR.dtd;
 
@@ -436,7 +447,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 
 		// Different protection pattern is used for those that
 		// live in attributes to avoid from being HTML encoded.
-		return data.replace( /(['"]).*?\1/g, function ( match )
+		return data.replace( /<[^>]*(['"]).*?\1*>/g, function ( match )
 		{
 			return match.replace( /<!--\{cke_protected\}([\s\S]+?)-->/g, function( match, data )
 			{
